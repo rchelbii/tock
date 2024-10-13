@@ -1,12 +1,19 @@
 package pow
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"math"
 	"math/big"
 
 	"github.com/rchelbii/tock/internal/block"
 )
 
-const TARGET_BITS = 24
+const (
+	TARGET_BITS = 24
+
+	MAX_NONCE = math.MaxInt64
+)
 
 type ProofOfWork struct {
 	block  *block.Block
@@ -21,4 +28,39 @@ func NewProofOfWork(b *block.Block) *ProofOfWork {
 		target: target,
 	}
 	return pow
+}
+
+func (pow *ProofOfWork) DataToHash(nonce int) []byte {
+	data := bytes.Join(
+		[][]byte{
+			pow.block.Data,
+			pow.block.PrevBlockHash,
+			[]byte(intToHex(int(pow.block.Timestamp))),
+			[]byte(intToHex(int64(TARGET_BITS))),
+			[]byte(intToHex(int64(nonce))),
+		},
+		[]byte{},
+	)
+	return data
+}
+
+func (pow *ProofOfWork) Proof() (int, []byte) {
+	var hashInt big.Int
+	var hash [32]byte
+
+	nonce := 0
+
+	for nonce < MAX_NONCE {
+		data := pow.DataToHash(nonce)
+        hash := sha256.Sum256(data)
+        hashInt.SetBytes(hash[:])
+
+        if hashInt.Cmp(pow.target) == -1 {
+            break
+        } else {
+            nonce++
+        }
+	}
+
+    return nonce, hash[:]
 }
