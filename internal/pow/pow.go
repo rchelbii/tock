@@ -52,15 +52,25 @@ func (pow *ProofOfWork) Proof() (int, []byte) {
 
 	for nonce < MAX_NONCE {
 		data := pow.DataToHash(nonce)
-        hash := sha256.Sum256(data)
-        hashInt.SetBytes(hash[:])
+		hash := sha256.Sum256(data)
+		hashInt.SetBytes(hash[:])
 
-        if hashInt.Cmp(pow.target) == -1 {
-            break
-        } else {
-            nonce++
-        }
+		if hashInt.Cmp(pow.target) == -1 {
+			break
+		} else {
+			nonce++
+		}
 	}
 
-    return nonce, hash[:]
+	return nonce, hash[:]
+}
+
+func (pow *ProofOfWork) Validate() bool {
+	var hashInt big.Int
+
+	data := pow.DataToHash(0)
+	hash := sha256.Sum256(data)
+	hashInt.SetBytes(hash[:])
+
+	return hashInt.Cmp(pow.target) == -1
 }
